@@ -74,10 +74,3 @@ class SequelAnime(Anime):
         self.prequel = Anime(prequel_data)
         self.sequel_type = sequel_type
         self.season = season
-
-class SequelAdaptedAnime(AdaptedAnime, SequelAnime):
-    def __init__(self, anime_data, manga_data, prequel_data, sequel_type: str, season: int) -> None:
-        super().__init__(anime_data, manga_data)
-        self.prequel = AdaptedAnime(prequel_data, manga_data)
-        self.sequel_type = sequel_type
-        self.season = season
