@@ -1,3 +1,4 @@
 FAL_weekly_ranking/input/
 FAL_weekly_ranking/output/
 .env
+__pycache__
