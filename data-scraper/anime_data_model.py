@@ -1,3 +1,5 @@
+TOTAL_MANGA = 19062
+
 class Anime:
     def __init__(self, anime_data) -> None:
         """
@@ -6,7 +8,7 @@ class Anime:
         anime_id - ID of the anime in MyAnimeList
         title - title of the anime
         favourites - number of users who have favorited the anime
-        ptw - number of users who have added the anime to their Plan to Watch list
+        p2w - number of users who have added the anime to their Plan to Watch list
         watching - number of users who are currently watching the anime
         dropped - number of users who have dropped the anime
         completed - number of users who have completed the anime
@@ -15,23 +17,29 @@ class Anime:
         self.id = anime_data['id']
         self.title = anime_data['title']
         self.favourites =int(anime_data['num_favorites'])
-        self.ptw = int(anime_data['statistics']['status']['plan_to_watch'])
+        self.p2w = int(anime_data['statistics']['status']['plan_to_watch'])
         self.watching = int(anime_data['statistics']['status']['watching'])
         self.completed = int(anime_data['statistics']['status']['completed'])
         self.dropped = int(anime_data['statistics']['status']['dropped'])
         self.rating = anime_data.get("mean") or -1
+        self.source = anime_data.get('source')
 
-    def favourites_per_100_ptw(self) -> float:
-        return self.favourites / self.ptw * 100
+    def favourites_per_100_p2w(self) -> float:
+        return self.favourites / self.p2w * 100
 
     def get_mal_link(self) -> str:
         return f"https://myanimelist.net/anime/{self.id}"
 
     def get_drop_rate(self) -> float:
-        return self.dropped / (self.dropped + self.completed + self.watching) * 100
+        total = self.dropped + self.completed + self.watching
+        if total == 0:
+            return 0.0
+        return self.dropped / total * 100
+
+    def __repr__(self) -> str:
+        return f"{self.title}"
 
 class AdaptedAnime(Anime):
-    TOTAL_MANGA = 18071
 
     def __init__(self, anime_data, manga_data) -> None:
         """
@@ -54,7 +62,7 @@ class AdaptedAnime(Anime):
     def get_manga_percentile(self) -> float:
         if self.manga_score <= 0:
             return -1
-        return (1 - self.manga_rank / AdaptedAnime.TOTAL_MANGA) * 100
+        return (1 - self.manga_rank / TOTAL_MANGA) * 100
 
     def get_manga_link(self) -> str:
         return f"https://myanimelist.net/manga/{self.manga_id}"

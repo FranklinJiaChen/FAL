@@ -1,4 +1,5 @@
-FAL_weekly_ranking/input/
-FAL_weekly_ranking/output/
+fal-weekly-ranking/input/
+fal-weekly-ranking/output/
 .env
+hidden/
 __pycache__
