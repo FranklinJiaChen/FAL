@@ -1,5 +1,5 @@
-# FAL
-Retrieving data for Fantasy Anime League.
+# Fantasy Anime League (FAL)
+Retrieving data for Fantasy Anime League in order to predict how well Anime will do on the upcoming season.
 
 note: this repository is not well organized nor well documented as
 it was made quickly before FAL start
