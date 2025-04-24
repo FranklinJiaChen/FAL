@@ -8,7 +8,7 @@ and during start of a school term.
 To-do: organize the repository and increase automation to minimize work between FAL seasons to acquire data.
 should also get air date of last prequel
 
-This will be done enxt FAL season
+This will hopefully be updated next FAL season
 # Usage
 Copy .env_example to .env and add MAL api token as CLIENT_ID.
 run season_scraper.py to generate a csv contataining all the shows
