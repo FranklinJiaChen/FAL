@@ -1,5 +1,3 @@
-# FAL
-Retrieving data for Fantasy Anime League.
 
 note: this repository is not well organized nor well documented as
 it was made quickly before FAL start
