@@ -1,6 +1,6 @@
 fal-weekly-ranking/input/
 fal-weekly-ranking/output/
 .env
-.xlsx
+*.xlsx
 hidden/
 __pycache__
