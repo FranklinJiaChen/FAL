@@ -3,17 +3,17 @@ import requests
 from openpyxl import Workbook
 from openpyxl.comments import Comment
 from openpyxl.styles import Alignment, Font
+from openpyxl.formatting.rule import ColorScaleRule
 from openpyxl.utils import get_column_letter
 from dotenv import load_dotenv
 import os
 from anime_data_model import Anime, AdaptedAnime, SequelAnime
 
 load_dotenv()
-
 CLIENT_ID = os.getenv("CLIENT_ID")
 
 def fetch_anime_data(anime_id):
-    url = f'https://api.myanimelist.net/v2/anime/{anime_id}?fields=mean,num_favorites,statistics,related_manga'
+    url = f'https://api.myanimelist.net/v2/anime/{anime_id}?fields=mean,num_favorites,statistics,related_manga,start_season'
     response = requests.get(url, headers={'X-MAL-CLIENT-ID': CLIENT_ID})
     response.raise_for_status()
     anime_data = response.json()
@@ -66,11 +66,11 @@ def create_sequel_anime(anime_id, prequel_id, type=-1, season="unknown"):
 
 def create_originals_sheet(workbook, originals_list):
     TITLE = 1
-    FAVOURITE = 2
-    PLAN_TO_WATCH = 3
+    PLAN_TO_WATCH = 2
+    FAVOURITE = 3
     FAV_TO_P2W = 4
 
-    headers = ['Title', 'Favourites', 'P2W', 'Favs:P2W']
+    headers = ['Title', 'P2W', 'Favourites', 'Favs:P2W']
 
     original_sheet = workbook.create_sheet(title="Originals")
 
@@ -82,14 +82,32 @@ def create_originals_sheet(workbook, originals_list):
 
     for j, anime in enumerate(originals_list):
         original_sheet.cell(j+2, TITLE).value = anime.title
-        original_sheet.cell(j+2, FAVOURITE).value = anime.favourites
         original_sheet.cell(j+2, PLAN_TO_WATCH).value = anime.p2w
+        original_sheet.cell(j+2, FAVOURITE).value = anime.favourites
         original_sheet.cell(j+2, FAV_TO_P2W).value = anime.favourites_per_100_p2w()
 
         original_sheet.cell(j+2, TITLE).hyperlink = anime.get_mal_link()
 
+    # Apply conditional formatting to the P2W column
+    p2w_col_letter = get_column_letter(PLAN_TO_WATCH)
+    p2w_range = f"{p2w_col_letter}2:{p2w_col_letter}{len(originals_list) + 1}"
+
+    # note: Mettalic Rouge had 20150 and it flopped.
+    # The only good orignal I have witnessed was Undead Girl Murder Farce which had 18235
+    colour_rule = ColorScaleRule(
+        start_type='num', start_value=5000, start_color='FF9999',    # Red
+        mid_type='num', mid_value=10000, mid_color='FFFF99',      # Yellow
+        end_type='num', end_value=25000, end_color='99FF99'       # Green
+    )
+
+    original_sheet.conditional_formatting.add(p2w_range, colour_rule)
+
+
     original_sheet[get_column_letter(PLAN_TO_WATCH) + '1'].comment = Comment("Plan to Watch", "Author")
     original_sheet[get_column_letter(FAV_TO_P2W) + '1'].comment = Comment("Favourite to Plan to Watch. Favourites/Plan to Watch * 100", "Author")
+
+    original_sheet.column_dimensions[get_column_letter(FAVOURITE)].hidden = True
+    original_sheet.column_dimensions[get_column_letter(FAV_TO_P2W)].hidden = True
 
 def create_adaptations_sheet(workbook, adaptations_list):
     TITLE = 1
@@ -128,6 +146,74 @@ def create_adaptations_sheet(workbook, adaptations_list):
 
         adaptation_sheet.cell(j+2, TITLE).hyperlink = anime.get_mal_link()
 
+    # Apply conditional formatting to the P2W column
+    p2w_col_letter = get_column_letter(PLAN_TO_WATCH)
+    p2w_range = f"{p2w_col_letter}2:{p2w_col_letter}{len(adaptations_list) + 1}"
+    colour_rule = ColorScaleRule(
+        start_type='num', start_value=0, start_color='FF9999',    # Red
+        mid_type='num', mid_value=20000, mid_color='FFFF99',
+        end_type='num', end_value=70000, end_color='99FF99'       # Green
+    )
+    adaptation_sheet.conditional_formatting.add(p2w_range, colour_rule)
+
+    # Apply conditional formatting to the favourites column
+    favourite_col_letter = get_column_letter(FAVOURITE)
+    favourite_range = f"{favourite_col_letter}2:{favourite_col_letter}{len(adaptations_list) + 1}"
+    favourite_colour_rule = ColorScaleRule(
+        start_type='num', start_value=0, start_color='FF9999',    # Red
+        mid_type='num', mid_value=100, mid_color='FFFF99',
+        end_type='num', end_value=1000, end_color='99FF99'       # Green
+    )
+    adaptation_sheet.conditional_formatting.add(favourite_range, favourite_colour_rule)
+    # Apply conditional formatting to the manga score column
+    manga_score_col_letter = get_column_letter(MANGA_SCORE)
+    manga_score_range = f"{manga_score_col_letter}2:{manga_score_col_letter}{len(adaptations_list) + 1}"
+    manga_score_colour_rule = ColorScaleRule(
+        start_type='num', start_value=6.5, start_color='FF9999',    # Red
+        mid_type='num', mid_value=7.5, mid_color='FFFF99',
+        end_type='num', end_value=8.5, end_color='99FF99'       # Green
+    )
+    adaptation_sheet.conditional_formatting.add(manga_score_range, manga_score_colour_rule)
+    # Apply conditional formatting to the manga rank column
+    # manga_rank_col_letter = get_column_letter(MANGA_RANK)
+    # manga_rank_range = f"{manga_rank_col_letter}2:{manga_rank_col_letter}{len(adaptations_list) + 1}"
+    # manga_rank_colour_rule = ColorScaleRule(
+    #     start_type='num', start_value=10000, start_color='FF9999',    # Red
+    #     mid_type='num', mid_value=5000, mid_color='FFFF99',
+    #     end_type='num', end_value=1000, end_color='99FF99'       # Green
+    # )
+    # adaptation_sheet.conditional_formatting.add(manga_rank_range, manga_rank_colour_rule)
+
+    # Apply conditional formatting to the manga percentile column
+    manga_percentile_col_letter = get_column_letter(MANGA_PERCENTILE)
+    manga_percentile_range = f"{manga_percentile_col_letter}2:{manga_percentile_col_letter}{len(adaptations_list) + 1}"
+    manga_percentile_colour_rule = ColorScaleRule(
+        start_type='num', start_value=0, start_color='FF9999',    # Red
+        mid_type='num', mid_value=50, mid_color='FFFF99',
+        end_type='num', end_value=100, end_color='99FF99'       # Green
+    )
+    adaptation_sheet.conditional_formatting.add(manga_percentile_range, manga_percentile_colour_rule)
+
+    # Apply conditional format to manga num users column
+    manga_num_users_col_letter = get_column_letter(MANGA_NUM_USERS)
+    manga_num_users_range = f"{manga_num_users_col_letter}2:{manga_num_users_col_letter}{len(adaptations_list) + 1}"
+    manga_num_users_colour_rule = ColorScaleRule(
+        start_type='num', start_value=5000, start_color='FF9999',    # Red
+        mid_type='num', mid_value=10000, mid_color='FFFF99',
+        end_type='num', end_value=50000, end_color='99FF99'       # Green
+    )
+    adaptation_sheet.conditional_formatting.add(manga_num_users_range, manga_num_users_colour_rule)
+
+    # Apply conditional format to manga favourites column
+    manga_favourites_col_letter = get_column_letter(MANGA_FAVOURITE)
+    manga_favourites_range = f"{manga_favourites_col_letter}2:{manga_favourites_col_letter}{len(adaptations_list) + 1}"
+    manga_favourites_colour_rule = ColorScaleRule(
+        start_type='num', start_value=0, start_color='FF9999',    # Red
+        mid_type='num', mid_value=200, mid_color='FFFF99',
+        end_type='num', end_value=2000, end_color='99FF99'       # Green
+    )
+    adaptation_sheet.conditional_formatting.add(manga_favourites_range, manga_favourites_colour_rule)
+
     adaptation_sheet[get_column_letter(PLAN_TO_WATCH) + '1'].comment = Comment("Plan to Watch", "Author")
     adaptation_sheet[get_column_letter(FAV_TO_P2W) + '1'].comment = Comment("Favourite to Plan to Watch. Favourites/Plan to Watch * 100", "Author")
     adaptation_sheet[get_column_letter(MANGA_NUM_USERS) + '1'].comment = Comment("Number of users who have added the manga to their list", "Author")
@@ -137,7 +223,15 @@ def create_adaptations_sheet(workbook, adaptations_list):
     adaptation_sheet[get_column_letter(MANGA_PERCENTILE) + '1'].comment = Comment("Percentile of the manga", "Author")
     adaptation_sheet[get_column_letter(MANGA_FAV_TO_NUM_USERS) + '1'].comment = Comment("Favourites to Number of Users. Favourites/Number of Users * 100", "Author")
 
+    # hide ratio
+    adaptation_sheet.column_dimensions[get_column_letter(FAV_TO_P2W)].hidden = True
+    adaptation_sheet.column_dimensions[get_column_letter(MANGA_FAV_TO_NUM_USERS)].hidden = True
+    adaptation_sheet.column_dimensions[get_column_letter(MANGA_PERCENTILE)].hidden = True
+    adaptation_sheet.column_dimensions[get_column_letter(MANGA_RANK)].hidden = True
+
+
     return adaptation_sheet
+
 
 def create_sequels_sheet(workbook, sequels_list):
     TITLE = 1
@@ -152,8 +246,9 @@ def create_sequels_sheet(workbook, sequels_list):
     PREQUEL_DROP_RATE = 10
     PREQUEL_RATING = 11
     PREQUEL_TITLE = 12
+    PREQUEL_AIRING = 13
 
-    headers = ['Title', 'Favourites', 'P2W', 'Favs:P2W', 'Type', 'Season', 'P Completed', 'P Watching', 'P Dropped', 'P Drop Rate', 'P Rating', 'P Title']
+    headers = ['Title', 'Favourites', 'P2W', 'Favs:P2W', 'Type', 'Season', 'P Completed', 'P Watching', 'P Dropped', 'P Drop Rate', 'P Rating', 'P Title', "P air"]
     sequel_sheet = workbook.create_sheet(title="Sequels")
 
     for i, header in enumerate(headers):
@@ -175,10 +270,40 @@ def create_sequels_sheet(workbook, sequels_list):
         sequel_sheet.cell(j+2, PREQUEL_DROP_RATE).value = sequel_anime.prequel.get_drop_rate()
         sequel_sheet.cell(j+2, PREQUEL_RATING).value = sequel_anime.prequel.rating
         sequel_sheet.cell(j+2, PREQUEL_TITLE).value = sequel_anime.prequel.title
+        sequel_sheet.cell(j+2, PREQUEL_AIRING).value = sequel_anime.prequel_airing
 
         sequel_sheet.cell(j+2, TITLE).hyperlink = sequel_anime.get_mal_link()
         sequel_sheet.cell(j+2, PREQUEL_TITLE).hyperlink = sequel_anime.prequel.get_mal_link()
 
+    # Apply conditional formatting to the P2W column
+    p2w_col_letter = get_column_letter(PLAN_TO_WATCH)
+    p2w_range = f"{p2w_col_letter}2:{p2w_col_letter}{len(sequels_list) + 1}"
+    colour_rule = ColorScaleRule(
+        start_type='num', start_value=20000, start_color='FF9999',    # Red
+        mid_type='num', mid_value=50000, mid_color='FFFF99',      # Yellow
+        end_type='num', end_value=70000, end_color='99FF99'       # Green
+    )
+    sequel_sheet.conditional_formatting.add(p2w_range, colour_rule)
+    # Apply conditional formatting to prequel completed column
+    prequel_completed_col_letter = get_column_letter(PREQUEL_COMPLETED)
+    prequel_completed_range = f"{prequel_completed_col_letter}2:{prequel_completed_col_letter}{len(sequels_list) + 1}"
+    prequel_completed_colour_rule = ColorScaleRule(
+        start_type='num', start_value=50000, start_color='FF9999',    # Red
+        mid_type='num', mid_value=100000, mid_color='FFFF99',      # Yellow
+        end_type='num', end_value=200000, end_color='99FF99'       # Green
+    )
+    sequel_sheet.conditional_formatting.add(prequel_completed_range, prequel_completed_colour_rule)
+    # Apply conditional formatting to prequel rating column
+    prequel_rating_col_letter = get_column_letter(PREQUEL_RATING)
+    prequel_rating_range = f"{prequel_rating_col_letter}2:{prequel_rating_col_letter}{len(sequels_list) + 1}"
+    prequel_rating_colour_rule = ColorScaleRule(
+        start_type='num', start_value=6.5, start_color='FF9999',    # Red
+        mid_type='num', mid_value=7.5, mid_color='FFFF99',      # Yellow
+        end_type='num', end_value=8.5, end_color='99FF99'       # Green
+    )
+    sequel_sheet.conditional_formatting.add(prequel_rating_range, prequel_rating_colour_rule)
+
+    # Add comments to the headers
     sequel_sheet[get_column_letter(PLAN_TO_WATCH) + '1'].comment = Comment("Plan to Watch", "Author")
     sequel_sheet[get_column_letter(FAV_TO_P2W) + '1'].comment = Comment("Favourite to Plan to Watch. Favourites/Plan to Watch * 100", "Author")
     sequel_sheet[get_column_letter(PREQUEL_COMPLETED) + '1'].comment = Comment("Users Completed last part", "Author")
@@ -187,42 +312,90 @@ def create_sequels_sheet(workbook, sequels_list):
     sequel_sheet[get_column_letter(PREQUEL_DROP_RATE) + '1'].comment = Comment("Of last part: Dropped / (Dropped + Completed + Watching) * 100", "Author")
     sequel_sheet[get_column_letter(PREQUEL_RATING) + '1'].comment = Comment("Rating of last part", "Author")
 
+    # hide
+    sequel_sheet.column_dimensions[get_column_letter(FAV_TO_P2W)].hidden = True
+    sequel_sheet.column_dimensions[get_column_letter(PREQUEL_DROP_RATE)].hidden = True
+    sequel_sheet.column_dimensions[get_column_letter(PREQUEL_TITLE)].hidden = True
+    sequel_sheet.column_dimensions[get_column_letter(PREQUEL_DROPPED)].hidden = True
+    sequel_sheet.column_dimensions[get_column_letter(TYPE)].hidden = True
+    sequel_sheet.column_dimensions[get_column_letter(SEASON)].hidden = True
+
+
 
 def main():
-    # # ids
-    # originals = [54914, 55894, 54798, 54638, 54301, 51956]
-    # # (id, manga_id)
-    # adaptations = [
-    # (54041, 134631), (55310, 124129), (53494, 115194), (53439, 113958), (44081, 98184), (50583, 142465), (52985, 124053),
-    # (54294, 155189), (54362, 120485), (54103, 143425), (53262, 127231), (53879, 130392), (52990, 144451), (54852, 132247),
-    # (54714, 123681), (50695, 107908), (52934, 130629), (54492, 110929), (53848, 145140), (50586, 107774), (53300, 119440),
-    # (54616, 110623), (51297, 106733), (50184, 124310), (52347, 130331), (53237, 121197), (52991, 126287), (52962, 121484),
-    # (54431, 74955), (52741, 123956), (49766, 114939), (53833, 129361), (55153, 115475)]
-    # # (id, prequel_id, sequel_type, season)
-    # sequels = [(54803, 36934, "sequel", 2), (54743, 53613, "part 2", 1.5), (55644, 48549, "part 2", 3.5), (51304, 227, "spin-off", 1), (54858, 40803, "sequel", 2), (53040, 43969, "sequel", 2),
-    #             (54716, 3692, "far sequel", 2), (55775, 51139, "sequel", 2), (55742, 52955, "part 2", 2.5), (51794, 41491, "spin-off sequel", 2), (44583, 40958, "sequel", 2), (48761, 50664, "sequel", 2),
-    #               (51215, 42826, "sequel", 2), (53887, 50602, "sequel", 2), (42385, 10278, "spin-off", 1), (54758, 10278, "spin-off", 1), (54918, 50608, "sequel", 3)]
+    originals = [
+        54028,
+        61150,
+        57820,
+        58957,
+        55689,
+        60505
+    ]
+    adaptations = [
+        (59961, 168633),
+        (60732, 164607),
+        (60951, 153011),
+        (59791, 150111),
+        (59459, 145359),
+        (59161, 144290),
+        (59845, 144267),
+        (59062, 144180),
+        (59207, 142649),
+        (58913, 141833),
+        (60260, 139086),
+        (59424, 138928),
+        (59205, 138396),
+        (61023, 137439),
+        (60315, 135486),
+        (59689, 132750),
+        (59421, 132404),
+        (58197, 130317),
+        (60131, 130181),
+        (59130, 129759),
+        (59619, 129418),
+        (60326, 128538),
+        (56907, 127971),
+        (58811, 127436),
+        (60523, 124973),
+        (60130, 123921),
+        (60508, 123519),
+        (60697, 120467),
+        (60665, 119119),
+        (60316, 114601),
+        (53512, 108492),
+        (59632, 101946),
+        (59898, 101554),
+        (56693, 77827),
+        (53397, 74283)
+    ]
 
-    # #weird_prequel_adaptation = [(53848, 5711)]
-    # LNs = [(53494, 115193), (53439, 115165), (50583, 133333), (54103, 138763), (52990, 136419), (52934, 151180),
-    #         (54492, 86769), (54616, 107569), (50184, 122521), (52962, 128337), (54431, 75121), (52741, 123960), (53833, 138424)]
+    sequels = [
+        (61290, 59512),
+        (60285, 58939),
+        (61765, 58351),
+        (61274, 57925),
+        (61322, 57592),
+        (54145, 54144),
+        (61339, 53924),
+        (58749, 53881),
+        (59095, 53516),
+        (59277, 53050),
+        (56700, 52619),
+        (59402, 48675),
+        (58996, 42391),
+        (57907, 40357),
+        (61239, 27727),
+        (52293, 8795),
+        (59342, 2012)
+    ]
 
-    # originals = [54794, 54197, 56691, 57180, 55528, 54142, 57150, 57218, 55358, 55397]
-    # adaptations = [(52701, 85781), (53730, 114925), (49613, 106810), (54837, 124305), (54449, 137799), (53590, 131041), (51648, 111225), (52359, 114259), (56352, 132500), (52482, 134974), (50392, 116880), (55866, 121504), (53421, 121597), (52816, 106204), (55129, 100079), (55774, 119375), (55998, 47977), (56242, 8070), (56845, 119811), (55636, 115736), (57012, 162774), (54632, 130806), (54617, 117549), (54265, 66685), (54722, 120680), (55973, 121303)]
-    # sequels = [(50803, 40530), (53488, 44037), (54754, 43760), (53889, 33506), (54829, 50710), (51673, 42205), (53223, 50160), (54869, 49154), (56731, 53026), (57180, 55166), (54142, 52079), (55690, 52578)]
-
-
-    #, (57623, 40879)
-    originals = [54859, 52405, 54839, 57391, 53356, 55102, 54309]
-    adaptations = [(50869, 143496), (54233, 118625), (56768, 103063), (53835, 130524), (53516, 129631), (53434, 113169), (56923, 119152), (55265, 127781), (56690, 73271), (53912, 130236), (55717, 125219), (57100, 82427), (55877, 152232), (52588, 127907), (53770, 132129), (55597, 111953), (53865, 121426), (55911, 87844), (56838, 129045), (57031, 121151), (55194, 158508), (56980, 159774), (54900, 133081), (56230, 127860), (54199, 122419), (58080, 139164), (51461, 129731)]
-    sequels = [(39894, 51995), (56738, 49858), (48418, 48417), (56165, 42829), (52196, 41461), (57623, 53077), (50713, 40497), (53410, 38474), (57798, 36531), (51859, 33018), (55855, 31812), (57946, 23135), (54758, 10278), (51122, 2966), (53407, 1589), (57614, 54854)]
-
+    sequels_list = [create_sequel_anime(anime_id, prequel_id) for anime_id, prequel_id in sequels]
     originals_list = [create_anime(anime_id) for anime_id in originals]
     adaptations_list = [create_adapted_anime(anime_id, manga_id) for anime_id, manga_id in adaptations]
     # light_novels_list = [create_adapted_anime(anime_id, manga_id) for anime_id, manga_id in LNs]
-    sequels_list = [create_sequel_anime(anime_id, prequel_id) for anime_id, prequel_id in sequels]
 
     workbook = Workbook()
+    workbook.remove(workbook.active)  # Remove the default sheet
 
     create_originals_sheet(workbook, originals_list)
     create_adaptations_sheet(workbook, adaptations_list)

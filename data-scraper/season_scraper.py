@@ -13,7 +13,13 @@ from openpyxl.styles import Alignment, Font
 from openpyxl.utils import get_column_letter
 
 MAX_VALUE_FOR_LIMIT = 500
-FIELDS = "mean,num_favorites,statistics,source,related_anime,media_type"
+FIELDS = "mean, " \
+"num_favorites, " \
+"statistics, " \
+"source, " \
+"related_anime," \
+"related_manga," \
+"media_type"
 
 load_dotenv()
 CLIENT_ID = os.getenv("CLIENT_ID")
@@ -79,8 +85,23 @@ def get_related_anime_id(anime: dict) -> tuple[int, str]:
     except (KeyError, TypeError, IndexError):
         return (-1, "")
 
+# def get_related_manga_id(anime: dict) -> tuple[int, str]:
+#     """
+#     [Does not work]
+#     Get the ID of the related manga.
 
-def fetch_anime_season_data(year: int, season: str) -> [Anime, tuple[int, str]]:
+#     Parameters:
+#     anime: The anime data.
+
+#     Returns:
+#     tuple[int, str]: The ID of the related manga and the relation type.
+#     """
+#     try:
+#         return (anime['related_manga'][0]['node']['id'], anime['related_manga'][0]['relation_type'])
+#     except (KeyError, TypeError, IndexError):
+#         return (-1, "")
+
+def fetch_anime_season_data(year: int, season: str, add_ids = [], unused_ids = []) -> [Anime, tuple[int, str]]:
     """
     Fetches the data for all the anime in a given season from the MyAnimeList API.
 
@@ -101,8 +122,8 @@ def fetch_anime_season_data(year: int, season: str) -> [Anime, tuple[int, str]]:
     response.close()
     seasonal_list = [
         fetch_anime_data(anime['node']['id'], FIELDS)
-        for anime in anime_season_data['data']
-    ]
+        for anime in anime_season_data['data'] if anime['node']['id'] not in unused_ids
+    ] + [fetch_anime_data(add_id, FIELDS) for add_id in add_ids]
     anime_list = [(Anime(anime), get_related_anime_id(anime)) for anime in seasonal_list if anime['media_type'] == 'tv']
     return anime_list
 
@@ -127,7 +148,12 @@ def create_sheet(workbook: str, anime_list: [Anime, tuple[int, str]]) -> None:
 
     headers = ['Title', 'Favourites', 'P2W', 'Favs:P2W', 'Watching', 'id', 'Source', 'Prequel id', 'Relation2Prequel']
     sheet = workbook.active
-    create_headers(sheet, headers)
+
+    for i, header in enumerate(headers):
+        sheet.cell(1, i+1).value = header
+        sheet.cell(1, i+1).alignment = Alignment(horizontal='center')
+        sheet.cell(1, i+1).font = Font(bold=True)
+        sheet.freeze_panes = 'B2'
 
     for j, (anime, prequel) in enumerate(anime_list):
         sheet.cell(j+2, TITLE).value = anime.title
@@ -152,9 +178,34 @@ def main():
     Fetches the data for all the anime in the upcoming season and prints it to the console.
     Creates an Excel file with the data.
     """
+    # update these based on FAL season
+    for_fal = 1 # boolean to add "fal" to the filename
+    remove_ids = [
+        53065,
+        60543,
+        59177,
+        58390,
+        57433,
+        59986,
+        60603,
+        61793,
+        59865,
+        61731,
+        61778
+    ]
+
+    add_ids = [
+        52293,
+        60326,
+        61023,
+        61150,
+        57820,
+        60505
+    ]
+
     year = datetime.now().year
     upcoming_season = get_upcoming_season()
-    anime_list = fetch_anime_season_data(year, upcoming_season)
+    anime_list = fetch_anime_season_data(year, upcoming_season, add_ids, remove_ids)
     for anime in anime_list:
         try:
             print(anime)
@@ -165,8 +216,9 @@ def main():
     workbook = Workbook()
     create_sheet(workbook, anime_list)
 
-    data_dir = "data"
-    filename = os.path.join(data_dir, f"{upcoming_season}{year}_shows.xlsx")
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    data_dir = os.path.join(script_dir, "data")
+    filename = os.path.join(data_dir, f"{upcoming_season}{year}{'_fal'*for_fal}_shows.xlsx")
     workbook.save(filename)
 
 if __name__ == "__main__":

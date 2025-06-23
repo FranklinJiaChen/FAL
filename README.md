@@ -8,10 +8,12 @@ and during start of a school term.
 To-do: organize the repository and increase automation to minimize work between FAL seasons to acquire data.
 should also get air date of last prequel
 
-This will be done enxt FAL season
-# Usage
+# Pre-season Data Scraper usage
 Copy .env_example to .env and add MAL api token as CLIENT_ID.
-run season_scraper.py to generate a csv contataining all the shows
+run data_scraper/season_scraper.py to generate a csv containing shows of the season
+Remove ids of banned shows. Add any shows id the scraper missed (~5% are missed. Usually small shows or "gray" rated shows)
+run data_scraper/season_scraper.py with variable for_fal, remove_ids and add_ids updated to generate a csv containing shows of the FAL season
+
 ???
 (clean data)
 ???

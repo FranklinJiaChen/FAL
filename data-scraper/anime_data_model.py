@@ -1,4 +1,5 @@
-TOTAL_MANGA = 19062
+TOTAL_MANGA = 20965 # mangas with rating
+# last manga https://myanimelist.net/manga/12200/High_School_Musical
 
 class Anime:
     def __init__(self, anime_data) -> None:
@@ -82,3 +83,4 @@ class SequelAnime(Anime):
         self.prequel = Anime(prequel_data)
         self.sequel_type = sequel_type
         self.season = season
+        self.prequel_airing = prequel_data['start_season']['season'] + str(prequel_data['start_season']['year']) # move this to anime

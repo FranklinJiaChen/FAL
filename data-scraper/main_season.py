@@ -19,14 +19,14 @@ CLIENT_ID = os.getenv("CLIENT_ID")
 FIELDS = "mean,num_favorites,statistics,source,related_anime,media_type"
 
 PICKED_SHOWS = [
-    "Kaijuu 8-gou",
-    "Date A Live V",
-    "Ookami to Koushinryou: Merchant Meets the Wise Wolf",
-    "Sentai Daishikkaku",
-    "Yuru Camp△ Season 3",
-    "Kuroshitsuji: Kishuku Gakkou-hen",
-    "Wind Breaker",
-    "Yozakura-san Chi no Daisakusen"
+    "Bleach: Sennen Kessen-hen - Soukoku-tan",
+    "Ao no Hako",
+    "Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka V: Houjou no Megami-hen",
+    "Kimi wa Meido-sama.",
+    "Kekkon suru tte, Hontou desu ka",
+    "Arifureta Shokugyou de Sekai Saikyou Season 3",
+    "Dragon Ball Daima",
+    "Natsume Yuujinchou Shichi"
 ]
 
 def fetch_anime_data(anime_id: int, field: str):
@@ -83,7 +83,55 @@ def create_sheet(workbook, anime_list):
             sheet.cell(j+2, TITLE).font = Font(bold=True)
 
 def main():
-    ids = [50869, 54233, 56768, 55102, 39894, 56738, 54309, 48418, 56165, 52196, 57623, 50713, 53410, 57798, 51859, 55855, 57946, 54758, 51122, 53407, 53835, 53516, 53434, 56923, 55265, 56690, 53912, 55717, 57100, 55877, 52588, 53770, 55597, 53865, 55911, 56838, 57031, 55194, 54859, 56980, 52405, 54900, 56230, 54199, 58080, 51461, 54839, 57391, 53356, 57614]
+    # ids = [50869, 54233, 56768, 55102, 39894, 56738, 54309, 48418, 56165, 52196, 57623, 50713, 53410, 57798, 51859, 55855, 57946, 54758, 51122, 53407, 53835, 53516, 53434, 56923, 55265, 56690, 53912, 55717, 57100, 55877, 52588, 53770, 55597, 53865, 55911, 56838, 57031, 55194, 54859, 56980, 52405, 54900, 56230, 54199, 58080, 51461, 54839, 57391, 53356, 57614]
+    ids = [
+        59131,
+        56967,
+        56784,
+        58516,
+        57635,
+        57066,
+        58572,
+        58511,
+        57559,
+        53287,
+        55570,
+        50306,
+        52995,
+        56400,
+        55823,
+        57102,
+        56894,
+        53033,
+        57554,
+        55994,
+        57181,
+        57611,
+        55887,
+        56228,
+        56964,
+        57891,
+        55071,
+        54853,
+        55150,
+        54726,
+        57944,
+        58445,
+        57362,
+        52215,
+        56647,
+        58714,
+        56843,
+        58172,
+        57360,
+        57796,
+        57533,
+        53723,
+        56420,
+        56662,
+        58173,
+        56461
+    ]
     anime_list = [create_anime(anime_id) for anime_id in ids]
 
     workbook = Workbook()
@@ -93,7 +141,7 @@ def main():
     now = datetime.datetime.now()
     timestamp = now.strftime("%Y-%m-%d-%H-%M")
     data_dir = "data"
-    filename = os.path.join(data_dir, f"FAL_Spring_2024_data_{timestamp}.xlsx")
+    filename = os.path.join(data_dir, f"FAL_Fall_2024_data_{timestamp}.xlsx")
     workbook.save(filename)
 
 if __name__ == "__main__":
